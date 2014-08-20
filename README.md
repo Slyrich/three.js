@@ -17,3 +17,5 @@ Behavior rules for computer simulation:
 7. The number of possible binding sites available for a newly accreting dimer is dependent upon the size of the protofilament.
 8. The information for generating the protofilament shape is contained in the dimers itself.
 
+
+http://3.bp.blogspot.com/_guSOnFRs_Ks/TJySPEDW9eI/AAAAAAAAAOU/0SbkWQznxqk/s1600/microtubule.gif
