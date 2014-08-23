@@ -9,7 +9,7 @@
 <style type="text/css">
 div#canvas-frame{
   border: none;
-  cursor: pointer;
+  cursor: auto;
   width: 100%;
   height: 100%;
   background-color: #EEEEEE;
@@ -74,10 +74,133 @@ div#canvas-frame{
     scene.add(light);
   }
 
+  var mouse = new THREE.Vector2(),
+  projector = new THREE.Projector(),
+  offset = new THREE.Vector3(),
+  INTERSECTED,SELECTED;
+
+
+
+
+  document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+  document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+  function onDocumentMouseMove( event ) {
+
+      event.preventDefault();
+
+      mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+      //
+
+      var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+      projector.unprojectVector( vector, camera );
+
+      var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+
+      if ( SELECTED ) {
+
+          var intersects = raycaster.intersectObject( plane );
+          SELECTED.position.copy( intersects[ 0 ].point.sub( offset ) );
+          return;
+
+      }
+
+
+      var intersects = raycaster.intersectObjects( Group,true );
+
+      if ( intersects.length > 0 ) {
+
+          if ( INTERSECTED != intersects[ 0 ].object.parent ) {
+
+              if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+
+              INTERSECTED = intersects[ 0 ].object.parent;
+
+              plane.position.copy( INTERSECTED.position );
+              plane.lookAt( camera.position );
+
+          }
+
+
+      } else {
+
+          if ( INTERSECTED )
+
+          INTERSECTED = null;
+
+
+      }
+
+  }
+
+  function onDocumentMouseDown( event ) {
+
+      event.preventDefault();
+
+      var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+      projector.unprojectVector( vector, camera );
+
+      var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+      var intersects = raycaster.intersectObjects( Group,true );
+
+      if ( intersects.length > 0 ) {
+
+          controls.enabled = false;
+
+          SELECTED = intersects[ 0 ].object.parent;
+
+          var intersects = raycaster.intersectObject( plane );
+          offset.copy( intersects[ 0 ].point ).sub( plane.position );
+
+
+      }
+
+  }
+
+  function onDocumentMouseUp( event ) {
+
+      event.preventDefault();
+
+      controls.enabled = true;
+
+      if ( INTERSECTED ) {
+
+          plane.position.copy( INTERSECTED.position );
+
+          SELECTED = null;
+
+      }
+
+
+  }
+
+
  var Group = [];
  var sphere = [];
  var vector = [];
- function initObject(){  
+ function initObject(){
+     plane = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000,8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe:true } ) );
+     plane.lookAt( camera.position );
+     plane.visible = true;
+     scene.add( plane );
+
+
+     var C1 = new THREE.Mesh(new THREE.CylinderGeometry(200,200,400,100),new THREE.MeshBasicMaterial({color:0x111111,transparent:true,opacity:0.3}));
+     C1.rotation.x = Math.PI/2;
+     scene.add(C1);
+
+     var C2 = new THREE.Mesh(new THREE.CylinderGeometry(130,130,400,100),new THREE.MeshBasicMaterial({color:0x111111, transparent:true,opacity:0.8}));
+     C2.rotation.x = Math.PI/2;
+     scene.add(C2);
+
+
+
     sphere[0] = new THREE.Mesh(
          new THREE.SphereGeometry(20,50,50),               
          new THREE.MeshLambertMaterial({color: 0xffff00}) 
@@ -96,23 +219,18 @@ div#canvas-frame{
      ry.push(0);
      rz.push(0);
      sx.push(0);
-     sy.push(0);
-     sz.push(0);
-    scene.add(sphere[0]);
-    scene.add(sphere[1]);
+     sy.push(500);
+     sz.push(300);
 
-    sphere[0].position.set(0,-18,0);
-    sphere[1].position.set(0,18,0);
-     scene.add(sphere[0]);
-     scene.add(sphere[1]);
-
+    sphere[0].position.set(0,482,300);
+    sphere[1].position.set(0,518,300);
     
     dimer = new THREE.Object3D();
     dimer.add(sphere[0]);
     dimer.add(sphere[1]);
-    dimer.position.set(0, 0, 0);
     Group.push(dimer);
     scene.add(Group[0]);
+     Group[0].name="Group[0]"
 
   }
       var k = 2;
@@ -136,19 +254,18 @@ div#canvas-frame{
             ry.push(0);
             rz.push(0);
             sx.push(0);
-            sy.push(0);
-            sz.push(0);
-    sphere[k].position.set(0,-18,0);
-    sphere[k + 1].position.set(0,18,0);
+            sy.push(500);
+            sz.push(300);
+    sphere[k].position.set(0,482,300);
+    sphere[k + 1].position.set(0,518,300);
 
-            scene.add(sphere[k]);
-            scene.add(sphere[k + 1]);
 
     dimer2 = new THREE.Object3D();
     dimer2.add(sphere[k]);
     dimer2.add(sphere[k + 1]);
     Group.push(dimer2);
     scene.add(Group[kk]);
+            Group[kk].name="Group[kk]"
     kk++;
     k += 2;
         }
@@ -184,7 +301,7 @@ div#canvas-frame{
     renderer.render(scene,camera);
     controls.update();
 
-      for(var i = 0; i < Group.length; i++) {
+/*      for(var i = 0; i < Group.length; i++) {
           sx[i] += parseInt(12 * Math.random() - 6);
           sy[i] += parseInt(12 * Math.random() - 6);
           sz[i] += parseInt(12 * Math.random() - 6);
@@ -209,8 +326,9 @@ div#canvas-frame{
 
           }
       }
-
+*/
       requestAnimationFrame(animate);
+
         
   }
 
