@@ -72,7 +72,11 @@ div#canvas-frame{
     light.position.set( 100, 100, 200 );
     light.castShadow = true;
     scene.add(light);
-  }
+
+      light2 = new THREE.DirectionalLight(0xFFFFFF, 1.0, 0);
+      light2.position.set( -100, -100, -200 );
+      light2.castShadow = true;
+      scene.add(light2);  }
 
   var mouse = new THREE.Vector2(),
   projector = new THREE.Projector(),
@@ -187,15 +191,15 @@ div#canvas-frame{
  function initObject(){
      plane = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000,8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe:true } ) );
      plane.lookAt( camera.position );
-     plane.visible = true;
+     plane.visible = false;
      scene.add( plane );
 
 
-     var C1 = new THREE.Mesh(new THREE.CylinderGeometry(200,200,400,100),new THREE.MeshBasicMaterial({color:0x111111,transparent:true,opacity:0.3}));
+     var C1 = new THREE.Mesh(new THREE.CylinderGeometry(220,220,400,100),new THREE.MeshBasicMaterial({color:0x111111,transparent:true,opacity:0.3}));
      C1.rotation.x = Math.PI/2;
      scene.add(C1);
 
-     var C2 = new THREE.Mesh(new THREE.CylinderGeometry(130,130,400,100),new THREE.MeshBasicMaterial({color:0x111111, transparent:true,opacity:0.8}));
+     var C2 = new THREE.Mesh(new THREE.CylinderGeometry(110,110,400,100),new THREE.MeshBasicMaterial({color:0x111111, transparent:true,opacity:0.8}));
      C2.rotation.x = Math.PI/2;
      scene.add(C2);
 
@@ -215,22 +219,15 @@ div#canvas-frame{
     );
    vector[1] = new THREE.Vector3();
 
-     rx.push(0);
-     ry.push(0);
-     rz.push(0);
-     sx.push(0);
-     sy.push(500);
-     sz.push(300);
-
-    sphere[0].position.set(0,482,300);
-    sphere[1].position.set(0,518,300);
+    sphere[0].position.set(0,-18,0);
+    sphere[1].position.set(0,18,0);
     
     dimer = new THREE.Object3D();
     dimer.add(sphere[0]);
     dimer.add(sphere[1]);
     Group.push(dimer);
+     Group[0].position.set(0,500,300)
     scene.add(Group[0]);
-     Group[0].name="Group[0]"
 
   }
       var k = 2;
@@ -250,22 +247,15 @@ div#canvas-frame{
             );
             vector[k + 1] = new THREE.Vector3();
 
-            rx.push(0);
-            ry.push(0);
-            rz.push(0);
-            sx.push(0);
-            sy.push(500);
-            sz.push(300);
-    sphere[k].position.set(0,482,300);
-    sphere[k + 1].position.set(0,518,300);
-
+            sphere[k].position.set(0,-18,0);
+            sphere[k+1].position.set(0,18,0);
 
     dimer2 = new THREE.Object3D();
     dimer2.add(sphere[k]);
     dimer2.add(sphere[k + 1]);
     Group.push(dimer2);
+    Group[kk].position.set(0,500,300);
     scene.add(Group[kk]);
-            Group[kk].name="Group[kk]"
     kk++;
     k += 2;
         }
@@ -276,23 +266,47 @@ div#canvas-frame{
     gui.add(controlPanel, 'addDimers');
 
 
-  var rx = [];
-  var ry = [];
-  var rz = [];
 
-  var sx = [];
-  var sy = [];
-  var sz = [];
 
 
   function collisionDetection( m, n){
 
           var mod = new THREE.Vector3(vector[m].x - vector[n].x, vector[m].y - vector[n].y, vector[m].z - vector[n].z);
-          if (mod.length() <= 20) {
+          if (mod.length() <= 40) {
               alert(m + "," + n + " crashed");
           }
 
   }
+
+  function brownianMotion (i) {
+      Group[i].position.x += parseInt(12 * Math.random() - 6);
+      Group[i].position.y += parseInt(12 * Math.random() - 6);
+      Group[i].position.z += parseInt(12 * Math.random() - 6);
+      Group[i].rotation.x += (0.4 * Math.random() - 0.2);
+      Group[i].rotation.y += (0.4 * Math.random() - 0.2);
+      Group[i].rotation.z += (0.4 * Math.random() - 0.2);
+
+  }
+
+  function checkPosition(i){
+      var x1 = vector[2 * i].x;
+      var x2 = vector[2 * i + 1].x;
+
+
+      var y1 = vector[2 * i].y;
+      var y2 = vector[2 * i + 1].y;
+
+      var z1 = vector[2 * i].z;
+      var z2 = vector[2 * i + 1].z;
+
+      if(x1*x1+y1*y1<=40000&&x1*x1+y1*y1>=16900&&x2*x2+y2*y2<=40000&&x2*x2+y2*y2>=16900){
+          if(z1<=200&&z1>=-200&&z2<=200&&z2>=-200){
+             return true;
+          }
+      }
+      return false;
+  }
+
 
 
   function animate(){
@@ -301,16 +315,11 @@ div#canvas-frame{
     renderer.render(scene,camera);
     controls.update();
 
-/*      for(var i = 0; i < Group.length; i++) {
-          sx[i] += parseInt(12 * Math.random() - 6);
-          sy[i] += parseInt(12 * Math.random() - 6);
-          sz[i] += parseInt(12 * Math.random() - 6);
-          rx[i] += (0.4 * Math.random() - 0.2);
-          ry[i] += (0.4 * Math.random() - 0.2);
-          rz[i] += (0.4 * Math.random() - 0.2);
+      for(var i = 0; i < Group.length; i++) {
 
-          Group[i].rotation.set(rx[i], ry[i], rz[i]);
-          Group[i].position.set(sx[i], sy[i], sz[i]);
+          if(checkPosition(i)) {
+              brownianMotion(i);
+          }
 
           vector[2 * i].getPositionFromMatrix(sphere[2 * i].matrixWorld);
 
@@ -326,7 +335,7 @@ div#canvas-frame{
 
           }
       }
-*/
+
       requestAnimationFrame(animate);
 
         
