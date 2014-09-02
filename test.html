@@ -226,7 +226,7 @@ div#canvas-frame{
     dimer.add(sphere[0]);
     dimer.add(sphere[1]);
     Group.push(dimer);
-     Group[0].position.set(0,500,300)
+    Group[0].position.set(0,500,300)
     scene.add(Group[0]);
 
   }
@@ -273,18 +273,37 @@ div#canvas-frame{
 
           var mod = new THREE.Vector3(vector[m].x - vector[n].x, vector[m].y - vector[n].y, vector[m].z - vector[n].z);
           if (mod.length() <= 40) {
-              alert(m + "," + n + " crashed");
+              if((m + n) % 2==0){
+                  var mod1 = mod.setLength(6);
+                  sphere[m].parent.position.x += mod1.x;
+                  sphere[m].parent.position.y += mod1.y;
+                  sphere[m].parent.position.z += mod1.z;
+
+                  sphere[n].parent.position.x -= mod1.x;
+                  sphere[n].parent.position.y -= mod1.y;
+                  sphere[n].parent.position.z -= mod1.z;
+
+              }else if((m + n) % 2==1){
+                  connect = new THREE.Object3D();
+                  connect.add(sphere[m].parent);
+                  connect.add(sphere[n].parent);
+                  scene.add(connect);
+
+
+              }
           }
 
   }
 
   function brownianMotion (i) {
-      Group[i].position.x += parseInt(12 * Math.random() - 6);
-      Group[i].position.y += parseInt(12 * Math.random() - 6);
-      Group[i].position.z += parseInt(12 * Math.random() - 6);
-      Group[i].rotation.x += (0.4 * Math.random() - 0.2);
-      Group[i].rotation.y += (0.4 * Math.random() - 0.2);
-      Group[i].rotation.z += (0.4 * Math.random() - 0.2);
+      Group[i].position.x += parseInt(6 * Math.random() - 3);
+      Group[i].position.y += parseInt(6 * Math.random() - 3);
+      Group[i].position.z += parseInt(6 * Math.random() - 3);
+      Group[i].rotation.x += (0.2 * Math.random() - 0.1);
+      Group[i].rotation.y += (0.2 * Math.random() - 0.1);
+      Group[i].rotation.z += (0.2 * Math.random() - 0.1);
+
+
 
   }
 
@@ -299,15 +318,25 @@ div#canvas-frame{
       var z1 = vector[2 * i].z;
       var z2 = vector[2 * i + 1].z;
 
-      if(x1*x1+y1*y1<=40000&&x1*x1+y1*y1>=16900&&x2*x2+y2*y2<=40000&&x2*x2+y2*y2>=16900){
-          if(z1<=200&&z1>=-200&&z2<=200&&z2>=-200){
-             return true;
-          }
+      var radius1 = x1*x1 + y1*y1;
+      var radius2 = x2*x2 + y2*y2;
+
+      var inner = false, outer = false, updown = false;
+
+
+      if(radius1<=40000&&radius1>=16900&&radius2<=40000&&radius2>=16900&&z1<=180&&z1>=-180&&z2<=180&&z2>=-180){
+          return 1;
+      }else if(radius1<=40000&&radius2<=40000&&z1<=180&&z1>=-180&&z2<=180&&z2>=-180&&((radius1<16900&&radius2>=16900)||(radius1>=16900&&radius2<16900))){
+          return 2;
+      }else if(radius1>=16900&&radius2>=16900&&z1<=180&&z1>=-180&&z2<=180&&z2>=-180&&((radius1>40000&&radius2<=40000)||(radius1<=40000&&radius2>40000))){
+          return 3;
+      }else if(radius1<=40000&&radius1>=16900&&radius2<=40000&&radius2>=16900&&((z1>180&&z2<=180)||(z2>180&&z1<=180))){
+          return 4;
+      }else if(radius1<=40000&&radius1>=16900&&radius2<=40000&&radius2>=16900&&((z1<-180&&z2>=-180)||(z1>=-180&&z2<-180))){
+          return 5;
       }
       return false;
   }
-
-
 
   function animate(){
 
@@ -317,10 +346,36 @@ div#canvas-frame{
 
       for(var i = 0; i < Group.length; i++) {
 
-          if(checkPosition(i)) {
+          switch (checkPosition(i)) {
+              case 1:
               brownianMotion(i);
-          }
+              break;
 
+              case 2:
+              var v = new THREE.Vector3(Group[i].x,Group[i].y,Group[i].z);
+              var v2 = v.setLength(6);
+              Group[i].position.x -= v2.x;
+              Group[i].position.y -= v2.y;
+              Group[i].position.z -= v2.z;
+              break;
+
+              case 3:
+                  var v = new THREE.Vector3(Group[i].x,Group[i].y,Group[i].z);
+                  var v2 = v.setLength(6);
+                  Group[i].position.x += v2.x;
+                  Group[i].position.y += v2.y;
+                  Group[i].position.z += v2.z;
+                  break;
+
+              case 4:
+                  Group[i].position.z -= 6;
+                  break;
+
+              case 5:
+                  Group[i].position.z += 6;
+                  break;
+
+          }
           vector[2 * i].getPositionFromMatrix(sphere[2 * i].matrixWorld);
 
           vector[2 * i + 1].getPositionFromMatrix(sphere[2 * i + 1].matrixWorld);
@@ -328,9 +383,10 @@ div#canvas-frame{
           if(Group.length > 1) {
                   for(var j = i; j < Group.length - 1; j++) {
                       collisionDetection(2 * i, 2 * j + 2);
+                      collisionDetection(2 * i + 1, 2 * j + 3);
                       collisionDetection(2 * i, 2 * j + 3);
                       collisionDetection(2 * i + 1, 2 * j + 2);
-                      collisionDetection(2 * i + 1, 2 * j + 3);
+
                   }
 
           }
