@@ -185,12 +185,12 @@ div#canvas-frame{
   }
 
   function checkExist(x,y,z){
-      for(var i = 0; i <= sphere.length; i++){
+      for(var i = 0; i <= sphere.length - 2; i++){
           if(x == sphere[i].position.x && y == sphere[i].position.y && z == sphere[i].position.z){
               return true;
           }
-          return false;
       }
+      return false;
   }
 
 
