@@ -1,0 +1,606 @@
+
+<html>
+<head>
+    <title>Three.js draft</title>
+    <script src="Three.js"></script>
+    <script src="Controls/TrackballControls.js"></script>
+    <script src='Controls/DAT.GUI.js'></script>
+    <script src='Controls/jquery-1.9.0.js'></script>
+    <style>
+        body{
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div id="WebGL-output">
+</div>
+<script type="text/javascript">
+var renderer = new THREE.WebGLRenderer({antialias: true});
+
+renderer.shadowMapEnabled = true;
+renderer.setSize(window.innerWidth, window.innerHeight );
+renderer.setClearColorHex(0xCCCCCC, 1.0);
+$("#WebGL-output").append(renderer.domElement);
+
+//////////////////////////////////////////////////////////////////////////////////
+//    Camera Controls                                                           //
+//////////////////////////////////////////////////////////////////////////////////
+var camera = new THREE.PerspectiveCamera( 45 , window.innerWidth / window.innerHeight , 1 , 10000 );
+camera.position.x = 1000;
+camera.position.y = 0;
+camera.position.z = 0;
+camera.up.x = 0;
+camera.up.y = 0;
+camera.up.z = 1;
+camera.lookAt( {x:0, y:0, z:0 } );
+
+controls = new THREE.TrackballControls( camera, renderer.domElement );
+
+controls.rotateSpeed = 2.0;
+controls.zoomSpeed = 1.2;
+controls.panSpeed = 0.8;
+
+controls.noZoom = false;
+controls.noPan = false;
+
+controls.staticMoving = true;
+controls.dynamicDampingFactor = 0.3;
+
+controls.keys = [ 65, 83, 68 ];
+
+
+
+var scene = new THREE.Scene();
+scene.updateMatrixWorld(true);
+
+
+
+var light = new THREE.DirectionalLight(0xFFFFFF, 1.0, 0);
+light.position.set( 100, 100, 200 );
+light.castShadow = true;
+scene.add(light);
+
+var light2 = new THREE.DirectionalLight(0xFFFFFF, 1.0, 0);
+light2.position.set( -100, -100, -200 );
+light2.castShadow = true;
+scene.add(light2);
+
+var mouse = new THREE.Vector2(),
+        projector = new THREE.Projector(),
+        offset = new THREE.Vector3(),
+        INTERSECTED,SELECTED;
+
+
+
+
+document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+function onDocumentMouseMove( event ) {
+
+    event.preventDefault();
+
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+    projector.unprojectVector( vector, camera );
+
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+
+    if ( SELECTED ) {
+
+        var intersects = raycaster.intersectObject( plane );
+        SELECTED.position.copy( intersects[ 0 ].point.sub( offset ) );
+        return;
+
+    }
+
+
+    var intersects = raycaster.intersectObjects( Group,true );
+
+    if ( intersects.length > 0 ) {
+
+        if ( INTERSECTED != intersects[ 0 ].object.parent ) {
+
+            if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+
+            INTERSECTED = intersects[ 0 ].object.parent;
+
+            plane.position.copy( INTERSECTED.position );
+            plane.lookAt( camera.position );
+
+        }
+
+
+    } else {
+
+        if ( INTERSECTED )
+
+            INTERSECTED = null;
+
+
+    }
+
+}
+
+function onDocumentMouseDown( event ) {
+
+    event.preventDefault();
+
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+    projector.unprojectVector( vector, camera );
+
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    var intersects = raycaster.intersectObjects( Group,true );
+
+    if ( intersects.length > 0 ) {
+
+        controls.enabled = false;
+
+        SELECTED = intersects[ 0 ].object.parent;
+
+        var intersects = raycaster.intersectObject( plane );
+        offset.copy( intersects[ 0 ].point ).sub( plane.position );
+
+
+    }
+
+}
+
+function onDocumentMouseUp( event ) {
+
+    event.preventDefault();
+
+    controls.enabled = true;
+
+    if ( INTERSECTED ) {
+
+        plane.position.copy( INTERSECTED.position );
+
+        SELECTED = null;
+
+    }
+
+
+}
+
+
+var axis = new THREE.Vector3(0,0,1);
+
+
+
+var height, width, MidWidth, MidHeight;
+var PositionX = [], PositionY = [], PositionZ = [], Status = [];
+var Possible = [];
+for (var i = 0; i < 6; i++){
+    Possible[i] = [];
+}
+
+height = 400 / 40;
+width = 800 / 40;
+MidWidth = Math.floor(width / 2)-1;
+MidHeight = Math.floor(height / 2)-1;
+
+Possible[0].push(MidHeight);
+Possible[0].push(MidWidth-1);
+Possible[1].push(MidHeight+1);
+Possible[1].push(MidWidth);
+Possible[2].push(MidHeight-1);
+Possible[2].push(MidWidth);
+Possible[3].push(MidHeight);
+Possible[3].push(MidWidth+2);
+Possible[4].push(MidHeight+1);
+Possible[4].push(MidWidth+1);
+Possible[5].push(MidHeight-1);
+Possible[5].push(MidWidth+1);
+
+
+
+for (var i = 0; i < height; i++) {
+    PositionX[i] = [];
+    PositionY[i] = [];
+    PositionZ[i] = [];
+    Status[i] = [];
+    for(var j = 0; j < width; j++) {
+        PositionX[i].push(0);
+        PositionY[i].push(0);
+        PositionZ[i].push(0);
+        Status[i].push(0);
+
+    }
+}
+
+
+
+
+PositionX[MidHeight][MidWidth] = 20 / (Math.tan(Math.PI / width));
+PositionY[MidHeight][MidWidth] = -20;
+PositionZ[MidHeight][MidWidth] = 0;
+Status[MidHeight][MidWidth] = 1;
+
+PositionX[MidHeight][MidWidth + 1] = 20 / (Math.tan(Math.PI / width));
+PositionY[MidHeight][MidWidth + 1] = 20;
+PositionZ[MidHeight][MidWidth + 1] = 0;
+Status[MidHeight][MidWidth + 1] = 1;
+
+
+var axis = new THREE.Vector3(0, 0, 1);
+
+
+for (var i = MidWidth - 1; i >= 0; i--) {
+
+    var VC = new THREE.Vector3(PositionX[MidHeight][i + 1], PositionY[MidHeight][i + 1], PositionZ[MidHeight][i + 1]);
+    var matrix = new THREE.Matrix4().makeRotationAxis(axis, (-2 * Math.PI) / width);
+    VC.applyMatrix4(matrix);
+    PositionX[MidHeight][i] = VC.x;
+    PositionY[MidHeight][i] = VC.y;
+    PositionZ[MidHeight][i] = VC.z;
+    Status[MidHeight][i] = 0;
+
+}
+
+for (var i = MidWidth + 2; i < width; i++) {
+
+    var VC = new THREE.Vector3(PositionX[MidHeight][i - 1], PositionY[MidHeight][i - 1], PositionZ[MidHeight][i - 1]);
+    var matrix = new THREE.Matrix4().makeRotationAxis(axis, (2 * Math.PI) / width);
+    VC.applyMatrix4(matrix);
+    PositionX[MidHeight][i] = VC.x;
+    PositionY[MidHeight][i] = VC.y;
+    PositionZ[MidHeight][i] = VC.z;
+    Status[MidHeight][i] = 0;
+
+}
+
+for (var i = 0; i < width; i++) {
+    for (var j = MidHeight - 1; j >= 0; j--) {
+        PositionX[j][i] = PositionX[j + 1][i];
+        PositionY[j][i] = PositionY[j + 1][i];
+        PositionZ[j][i] = PositionZ[j + 1][i] - 40;
+        Status[j][i] = 0;
+    }
+
+    for (var j = MidHeight + 1; j < height; j++) {
+        PositionX[j][i] = PositionX[j - 1][i];
+        PositionY[j][i] = PositionY[j - 1][i];
+        PositionZ[j][i] = PositionZ[j - 1][i] + 40;
+        Status[j][i] = 0;
+    }
+}
+
+var Group = [];
+var sphere = [];
+var  M1 = [],    M2 = [],    M3 = [],    M4 = [];
+var plane = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000,8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe:true } ) );
+plane.lookAt( camera.position );
+plane.visible = false;
+scene.add( plane );
+
+
+
+sphere[0] = new THREE.Mesh(
+        new THREE.SphereGeometry(20,50,50),
+        new THREE.MeshLambertMaterial({color: 0xffff00})
+
+);
+
+sphere[1] = new THREE.Mesh(
+        new THREE.SphereGeometry(20,50,50),
+        new THREE.MeshLambertMaterial({color: 0xff0000})
+
+);
+
+
+var x = Math.round(Math.random() * 120) - 60;
+var y = Math.round(Math.random() * 120) - 60;
+var z = Math.round(Math.random() * 120) - 60;
+
+sphere[0].position.set(PositionX[MidHeight][MidWidth],PositionY[MidHeight][MidWidth],PositionZ[MidHeight][MidWidth]);
+sphere[1].position.set(PositionX[MidHeight][MidWidth + 1],PositionY[MidHeight][MidWidth + 1],PositionZ[MidHeight][MidWidth + 1]);
+
+dimer = new THREE.Object3D();
+dimer.add(sphere[0]);
+dimer.add(sphere[1]);
+InsertParameter(0);
+InsertParameter(1);
+Group.push(dimer);
+scene.add(Group[0]);
+
+// Initialing positions
+
+
+
+//add dimer
+
+var k = 2;
+var kk = 1;
+
+
+
+
+
+var controlPanel = new function () {
+    this.TubeLength = 400;
+    this.TubeWidth = 800;
+
+
+    this.addDimer = function () {
+
+        var dice = Math.round(Math.random() * (2 *Group.length - 1) );
+
+        sphere[k] = new THREE.Mesh(
+                new THREE.SphereGeometry(20,50,50),
+                new THREE.MeshLambertMaterial({color: 0xffff00})
+        );
+        InsertParameter(k);
+
+
+        sphere[k + 1] = new THREE.Mesh(
+                new THREE.SphereGeometry(20,50,50),
+                new THREE.MeshLambertMaterial({color: 0xff0000})
+        )
+        InsertParameter(k+1);
+
+
+        setPosition(k,k+1);
+
+        scene.add(sphere[k]);
+        scene.add(sphere[k + 1]);
+        dimer2 = new THREE.Object3D();
+        dimer2.add(sphere[k]);
+        dimer2.add(sphere[k + 1]);
+
+        Group.push(dimer2);
+
+//    setRotation(Group[kk],dice);
+
+        scene.add(Group[kk]);
+        kk++;
+        k += 2;
+
+
+    }
+
+
+
+
+}
+
+
+var gui = new dat.GUI();
+gui.add(controlPanel, 'addDimer');
+gui.add(controlPanel, 'TubeLength', 40, 800).step(40);
+gui.add(controlPanel, 'TubeWidth', 80, 1600).step(80);
+
+
+animate();
+
+function animate(){
+
+
+
+    renderer.render(scene,camera);
+    controls.update();
+
+
+
+
+    requestAnimationFrame(animate);
+}
+
+
+
+
+
+
+function InsertParameter(i){
+
+    M1[i] = getGaussian();
+    M2[i] = getGaussian();
+    M3[i] = getGaussian();
+    M4[i] = getGaussian();
+
+}
+
+function getGaussian(){
+    var r1 = Math.random();
+    var r2 = Math.random();
+    return Math.sqrt( -2*Math.log(r1) ) * Math.cos( 2*Math.PI*r2 ) * 18.75+25;
+}
+
+var counter = 0;
+var Possible2 = [];
+for (var i = 0; i < 3; i++){
+    Possible2[i] = [];
+}
+function setPosition(m,n){
+    if (Possible.length == 0){
+        alert("end of the game");
+    }
+    var d1 = Math.round((Possible.length-1)*Math.random());
+    if((Math.abs(Possible[d1][0] - MidHeight)+Math.abs(Possible[d1][1] - MidWidth)) % 2 == 0){
+        sphere[m].position.set(PositionX[Possible[d1][0]][Possible[d1][1]], PositionY[Possible[d1][0]][Possible[d1][1]], PositionZ[Possible[d1][0]][Possible[d1][1]]);
+    }else{
+        sphere[n].position.set(PositionX[Possible[d1][0]][Possible[d1][1]], PositionY[Possible[d1][0]][Possible[d1][1]], PositionZ[Possible[d1][0]][Possible[d1][1]]);
+    }
+
+
+    Status[Possible[d1][0]][Possible[d1][1]] = 1;
+
+    if(Possible[d1][0]!=0){
+        if (Status[Possible[d1][0] - 1][Possible[d1][1]] == 0){
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0]-1);
+            Possible2[counter].push(Possible[d1][1]);
+            counter++;
+        }
+    }
+    if(Possible[d1][0]!=height-1) {
+        if (Status[Possible[d1][0] + 1][Possible[d1][1]] == 0) {
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0] + 1);
+            Possible2[counter].push(Possible[d1][1]);
+            counter++;
+        }
+    }
+    if(Possible[d1][1]==0){
+        if (Status[Possible[d1][0]][width-1] == 0) {
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0]);
+            Possible2[counter].push(width-1);
+            counter++;
+        }
+    }else {
+        if (Status[Possible[d1][0]][Possible[d1][1] - 1] == 0) {
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0]);
+            Possible2[counter].push(Possible[d1][1] - 1);
+            counter++;
+        }
+    }
+
+    if(Possible[d1][1] == width - 1){
+        if (Status[Possible[d1][0]][0] == 0) {
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0]);
+            Possible2[counter].push(0);
+            counter++;
+        }
+
+    }else {
+        if (Status[Possible[d1][0]][Possible[d1][1] + 1] == 0) {
+            Possible2[counter] = [];
+            Possible2[counter].push(Possible[d1][0]);
+            Possible2[counter].push(Possible[d1][1] + 1);
+            counter++;
+        }
+    }
+        Possible.splice(d1, 1);
+        counter = 0;
+
+
+//add another sphere
+        for(var i = 0; i<Possible2.length; i++){
+            if(Status[Possible2[i][0]][Possible2[i][1]] == 1)
+                Possible2.splice(i,1);
+
+        }
+
+        if(Possible2.length == 0){
+                scene.remove(sphere[n][sphere.length - 1]);
+                sphere.splice(n,1);
+                scene.remove(sphere[m][sphere.length - 1]);
+                sphere.splice(m,1);
+                for(var i = 0; i<Possible.length; i++){
+                    if(Status[Possible[i][0]][Possible[i][1]] == 1)
+                        Possible.splice(i,1);
+                }
+            controlPanel.addDimer();
+
+
+        }else{
+            var d2 = Math.round((Possible2.length-1)*Math.random());
+            if((Math.abs(Possible2[d2][0] - MidHeight)+Math.abs(Possible2[d2][1] - MidWidth)) % 2 == 0){
+                sphere[m].position.set(PositionX[Possible2[d2][0]][Possible2[d2][1]], PositionY[Possible2[d2][0]][Possible2[d2][1]], PositionZ[Possible2[d2][0]][Possible2[d2][1]]);
+            }else{
+                sphere[n].position.set(PositionX[Possible2[d2][0]][Possible2[d2][1]], PositionY[Possible2[d2][0]][Possible2[d2][1]], PositionZ[Possible2[d2][0]][Possible2[d2][1]]);
+            }
+
+            if(sphere[m].position.x==0&&sphere[m].position.y==0&&sphere[m].position.z==0){
+                alert('check');
+            }
+            if(sphere[n].position.x==0&&sphere[n].position.y==0&&sphere[n].position.z==0){
+                alert('check');
+            }
+
+        Status[Possible2[d2][0]][Possible2[d2][1]] = 1;
+        var counter2 = Possible.length;
+
+        if(Possible2[d2][0]!=0) {
+            if (Status[Possible2[d2][0] - 1][Possible2[d2][1]] == 0) {
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0] - 1);
+                Possible[counter2].push(Possible2[d2][1]);
+                counter2++;
+            }
+        }
+
+        if(Possible2[d2][0]!=height-1) {
+            if (Status[Possible2[d2][0] + 1][Possible2[d2][1]] == 0) {
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0] + 1);
+                Possible[counter2].push(Possible2[d2][1]);
+                counter2++;
+            }
+        }
+
+        if(Possible2[d2][1]==0) {
+            if(Status[Possible2[d2][0]][width-1] == 0){
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0]);
+                Possible[counter2].push(width - 1);
+                counter2++;
+            }
+        }else{
+            if (Status[Possible2[d2][0]][Possible2[d2][1] - 1] == 0) {
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0]);
+                Possible[counter2].push(Possible2[d2][1] - 1);
+                counter2++;
+            }
+        }
+
+
+        if(Possible2[d2][1]==width-1) {
+            if(Status[Possible2[d2][0]][0] == 0){
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0]);
+                Possible[counter2].push(0);
+                counter2++;
+            }
+        }else{
+            if (Status[Possible2[d2][0]][Possible2[d2][1] + 1] == 0) {
+                Possible[counter2] = [];
+                Possible[counter2].push(Possible2[d2][0]);
+                Possible[counter2].push(Possible2[d2][1] + 1);
+                counter2++;
+            }
+        }
+
+        Possible2.splice(d2,1);
+        for (var i = 0; i < Possible2.length; i++){
+            Possible[counter2] = [];
+            if(Status[Possible2[i][0]][Possible2[i][1]] ==0){
+                Possible[counter2].push(Possible2[i][0]);
+                Possible[counter2].push(Possible2[i][1]);
+            }
+        }
+        Possible2.length = 0;
+
+    }
+    for(var i = 0; i<Possible.length; i++){
+        if(Status[Possible[i][0]][Possible[i][1]] == 1)
+            Possible.splice(i,1);
+    }
+
+
+
+}
+
+
+
+
+
+
+
+</script>
+</body>
+
+</html>
