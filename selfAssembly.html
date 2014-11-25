@@ -184,8 +184,8 @@ for (var i = 0; i < 6; i++){
     Possible[i] = [];
 }
 
-height = 400 / 40;
-width = 800 / 40;
+height = 240 / 40;
+width = 240 / 40;
 MidWidth = Math.floor(width / 2)-1;
 MidHeight = Math.floor(height / 2)-1;
 
@@ -277,7 +277,24 @@ for (var i = 0; i < width; i++) {
 
 var Group = [];
 var sphere = [];
+var counter = 0;
+var Possible2 = [];
+var Record = [], Record2 = [], Record3 = [];
 var  M1 = [],    M2 = [],    M3 = [],    M4 = [];
+for (var i = 0; i < height; i++) {
+    Record3[i] = [];
+    M1[i] = [];
+    M2[i] = [];
+    M3[i] = [];
+    M4[i] = [];
+    for(var j = 0; j < width; j++) {
+        Record3[i].push(0);
+        M1[i].push(0);
+        M2[i].push(0);
+        M3[i].push(0);
+        M4[i].push(0);
+    }
+}
 var plane = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000,8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe:true } ) );
 plane.lookAt( camera.position );
 plane.visible = false;
@@ -308,8 +325,10 @@ sphere[1].position.set(PositionX[MidHeight][MidWidth + 1],PositionY[MidHeight][M
 dimer = new THREE.Object3D();
 dimer.add(sphere[0]);
 dimer.add(sphere[1]);
-InsertParameter(0);
-InsertParameter(1);
+Record3[MidHeight].splice(MidWidth,1,0);
+Record3[MidHeight].splice(MidWidth+1,1,1);
+InsertParameter(MidHeight,MidWidth);
+InsertParameter(MidHeight,MidWidth+1);
 Group.push(dimer);
 scene.add(Group[0]);
 
@@ -317,11 +336,11 @@ scene.add(Group[0]);
 
 
 
+
 //add dimer
 
 var k = 2;
 var kk = 1;
-
 
 
 
@@ -339,14 +358,13 @@ var controlPanel = new function () {
                 new THREE.SphereGeometry(20,50,50),
                 new THREE.MeshLambertMaterial({color: 0xffff00})
         );
-        InsertParameter(k);
+
 
 
         sphere[k + 1] = new THREE.Mesh(
                 new THREE.SphereGeometry(20,50,50),
                 new THREE.MeshLambertMaterial({color: 0xff0000})
         )
-        InsertParameter(k+1);
 
 
         setPosition(k,k+1);
@@ -367,8 +385,6 @@ var controlPanel = new function () {
 
 
     }
-
-
 
 
 }
@@ -398,38 +414,25 @@ function animate(){
 
 
 
-
-
-function InsertParameter(i){
-
-    M1[i] = getGaussian();
-    M2[i] = getGaussian();
-    M3[i] = getGaussian();
-    M4[i] = getGaussian();
-
-}
-
-function getGaussian(){
-    var r1 = Math.random();
-    var r2 = Math.random();
-    return Math.sqrt( -2*Math.log(r1) ) * Math.cos( 2*Math.PI*r2 ) * 18.75+25;
-}
-
-var counter = 0;
-var Possible2 = [];
 for (var i = 0; i < 3; i++){
     Possible2[i] = [];
 }
 function setPosition(m,n){
-    if (Possible.length == 0){
-        alert("end of the game");
-    }
+
+
     var d1 = Math.round((Possible.length-1)*Math.random());
     if((Math.abs(Possible[d1][0] - MidHeight)+Math.abs(Possible[d1][1] - MidWidth)) % 2 == 0){
         sphere[m].position.set(PositionX[Possible[d1][0]][Possible[d1][1]], PositionY[Possible[d1][0]][Possible[d1][1]], PositionZ[Possible[d1][0]][Possible[d1][1]]);
+        Record3[Possible[d1][0]].splice(Possible[d1][1],1,m);
+        InsertParameter(Possible[d1][0],Possible[d1][1]);
     }else{
         sphere[n].position.set(PositionX[Possible[d1][0]][Possible[d1][1]], PositionY[Possible[d1][0]][Possible[d1][1]], PositionZ[Possible[d1][0]][Possible[d1][1]]);
+        Record3[Possible[d1][0]].splice(Possible[d1][1],1,n);
+        InsertParameter(Possible[d1][0],Possible[d1][1]);
     }
+
+    Record.push(Possible[d1][0]);
+    Record2.push(Possible[d1][1]);
 
 
     Status[Possible[d1][0]][Possible[d1][1]] = 1;
@@ -498,27 +501,39 @@ function setPosition(m,n){
                 sphere.splice(n,1);
                 scene.remove(sphere[m][sphere.length - 1]);
                 sphere.splice(m,1);
-                for(var i = 0; i<Possible.length; i++){
+                Record3[Record[Record.length-1]].splice(Record2[Record2.length-1],1,"empty");
+                M1[Record[Record.length-1]].splice(Record2[Record2.length-1],1,"empty");
+                M2[Record[Record.length-1]].splice(Record2[Record2.length-1],1,"empty");
+                M3[Record[Record.length-1]].splice(Record2[Record2.length-1],1,"empty");
+                M4[Record[Record.length-1]].splice(Record2[Record2.length-1],1,"empty");
+                Record.splice(Record.length-1,1);
+                Record2.splice(Record2.length-1,1);
+
+
+                for(var i = Possible.length-1; i>=0; i++){
                     if(Status[Possible[i][0]][Possible[i][1]] == 1)
                         Possible.splice(i,1);
                 }
-            controlPanel.addDimer();
+
 
 
         }else{
             var d2 = Math.round((Possible2.length-1)*Math.random());
             if((Math.abs(Possible2[d2][0] - MidHeight)+Math.abs(Possible2[d2][1] - MidWidth)) % 2 == 0){
                 sphere[m].position.set(PositionX[Possible2[d2][0]][Possible2[d2][1]], PositionY[Possible2[d2][0]][Possible2[d2][1]], PositionZ[Possible2[d2][0]][Possible2[d2][1]]);
+                Record3[Possible2[d2][0]].splice(Possible2[d2][1],1,m);
+                InsertParameter(Possible2[d2][0],Possible2[d2][1]);
+
             }else{
                 sphere[n].position.set(PositionX[Possible2[d2][0]][Possible2[d2][1]], PositionY[Possible2[d2][0]][Possible2[d2][1]], PositionZ[Possible2[d2][0]][Possible2[d2][1]]);
+                Record3[Possible2[d2][0]].splice(Possible2[d2][1],1,n);
+                InsertParameter(Possible2[d2][0],Possible2[d2][1]);
+
             }
 
-            if(sphere[m].position.x==0&&sphere[m].position.y==0&&sphere[m].position.z==0){
-                alert('check');
-            }
-            if(sphere[n].position.x==0&&sphere[n].position.y==0&&sphere[n].position.z==0){
-                alert('check');
-            }
+            Record.push(Possible2[d2][0]);
+            Record2.push(Possible2[d2][1]);
+
 
         Status[Possible2[d2][0]][Possible2[d2][1]] = 1;
         var counter2 = Possible.length;
@@ -584,16 +599,127 @@ function setPosition(m,n){
         }
         Possible2.length = 0;
 
-    }
-    for(var i = 0; i<Possible.length; i++){
-        if(Status[Possible[i][0]][Possible[i][1]] == 1)
+}
+    for(var i = Possible.length-1; i>=0; i--){
+            if(Status[Possible[i][0]][Possible[i][1]] == 1){
             Possible.splice(i,1);
+        }
+
     }
+    if(Possible.length == 0){
+
+        document.writeln("Path:<br/>");
+        for(var i=0; i < Record3.length;i++){
+            for(var j = 0; j < Record3.length;j++){
+                document.writeln(Record3[i][j]);
+            }
+            document.writeln("<br/>");
+        }
+        document.writeln("<br/>");
+
+        document.writeln("Stickiness Left:<br/>");
+        for(var i=0; i < M1.length;i++){
+            for(var j = 0; j < M1.length;j++){
+                document.writeln(M1[i][j]);
+            }
+            document.writeln("<br/>");
+        }
+        document.writeln("<br/>");
+
+        document.writeln("Stickiness Right:<br/>");
+        for(var i=0; i < M2.length;i++){
+            for(var j = 0; j < M2.length;j++){
+                document.writeln(M2[i][j]);
+            }
+            document.writeln("<br/>");
+        }
+        document.writeln("<br/>");
+
+        document.writeln("Stickiness Up:<br/>");
+        for(var i=0; i < M3.length;i++){
+            for(var j = 0; j < M3.length;j++){
+                document.writeln(M3[i][j]);
+            }
+            document.writeln("<br/>");
+        }
+        document.writeln("<br/>");
+
+        document.writeln("Stickiness Down:<br/>");
+        for(var i=0; i < M4.length;i++){
+            for(var j = 0; j < M4.length;j++){
+                document.writeln(M4[i][j]);
+            }
+            document.writeln("<br/>");
+        }
+        document.writeln("<br/>");
+    }
+
+
 
 
 
 }
 
+
+function DrawLine(i,j,k){
+    if (M1[i][j] > 0){
+        line[k] = new THREE.line(
+                new THREE.lineGeometry(x,y,z),
+                new THREE.LineBasicMaterial({color: 0xffffff}))
+    }
+    else if(M1[i][j] < 0){
+        line[k] = new THREE.line(
+                new THREE.lineGeometry(x,y,z),
+                new THREE.LineBasicMaterial({color: 0xffffff}))
+        }
+
+    }
+
+
+
+
+
+
+
+function InsertParameter(i,j){
+
+    M1[i][j] = getGaussian();
+    M2[i][j] = getGaussian();
+    M3[i][j] = getGaussian();
+    M4[i][j] = getGaussian();
+
+}
+
+function getGaussian(){
+    var r1 = Math.random();
+    var r2 = Math.random();
+    var generator = Math.sqrt( -2*Math.log(r1) ) * Math.cos( 2*Math.PI*r2 );
+    if (generator>=1){
+        generator = .75;
+    }
+    else if (generator<=1&&generator>=0.6){
+        generator = 0.5;
+    }
+    else if (generator<=0.6&&generator>=0.3){
+        generator = 0.25;
+    }
+    else if (generator<=0.3&&generator>=0){
+        generator = 0;
+    }
+    else if (generator<=0&&generator>=-0.3){
+        generator = 0;
+    }
+    else if (generator<=-0.3&&generator>=-0.6){
+        generator = -0.25;
+    }
+    else if (generator<=-0.6&&generator>=-1){
+        generator = -0.5;
+    }
+    else if (generator<=-1){
+        generator = -0.75;
+    }
+    return generator;
+}
 
 
 
